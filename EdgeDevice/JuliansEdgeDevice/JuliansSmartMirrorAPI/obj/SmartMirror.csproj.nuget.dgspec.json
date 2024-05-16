@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/Users/Julian.Codespoti/Desktop/Uni/IOT/GroupAssignment/IoTGroupProject/EdgeDevice/JuilansSmartMirrorAPI/SmartMirror.csproj": {}
+    "/Users/Julian.Codespoti/Desktop/Uni/IOT/GroupAssignment/IoTGroupProject/EdgeDevice/JuliansEdgeDevice/JuliansSmartMirrorAPI/SmartMirror.csproj": {}
   },
   "projects": {
-    "/Users/Julian.Codespoti/Desktop/Uni/IOT/GroupAssignment/IoTGroupProject/EdgeDevice/JuilansSmartMirrorAPI/SmartMirror.csproj": {
+    "/Users/Julian.Codespoti/Desktop/Uni/IOT/GroupAssignment/IoTGroupProject/EdgeDevice/JuliansEdgeDevice/JuliansSmartMirrorAPI/SmartMirror.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/Julian.Codespoti/Desktop/Uni/IOT/GroupAssignment/IoTGroupProject/EdgeDevice/JuilansSmartMirrorAPI/SmartMirror.csproj",
+        "projectUniqueName": "/Users/Julian.Codespoti/Desktop/Uni/IOT/GroupAssignment/IoTGroupProject/EdgeDevice/JuliansEdgeDevice/JuliansSmartMirrorAPI/SmartMirror.csproj",
         "projectName": "SmartMirror",
-        "projectPath": "/Users/Julian.Codespoti/Desktop/Uni/IOT/GroupAssignment/IoTGroupProject/EdgeDevice/JuilansSmartMirrorAPI/SmartMirror.csproj",
+        "projectPath": "/Users/Julian.Codespoti/Desktop/Uni/IOT/GroupAssignment/IoTGroupProject/EdgeDevice/JuliansEdgeDevice/JuliansSmartMirrorAPI/SmartMirror.csproj",
         "packagesPath": "/Users/Julian.Codespoti/.nuget/packages/",
-        "outputPath": "/Users/Julian.Codespoti/Desktop/Uni/IOT/GroupAssignment/IoTGroupProject/EdgeDevice/JuilansSmartMirrorAPI/obj/",
+        "outputPath": "/Users/Julian.Codespoti/Desktop/Uni/IOT/GroupAssignment/IoTGroupProject/EdgeDevice/JuliansEdgeDevice/JuliansSmartMirrorAPI/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/Users/Julian.Codespoti/.nuget/NuGet/NuGet.Config"

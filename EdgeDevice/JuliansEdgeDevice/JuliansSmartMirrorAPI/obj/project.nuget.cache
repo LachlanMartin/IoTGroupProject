@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "HbnafJP2OPDtGVHFkLLnn3jZtdcH25Dy68gfBE/JJ47wFci1/X6H++pmY4D7e7RNEaR9W1Y4Uakjj2MndSgtzw==",
+  "dgSpecHash": "bjGp0oImVVu3ge4TihG4R0IFXRQInBX/+BMoNeuYMRz6sUGU6sTnP3bzscAhDWd/GBKyTwY8y/eLjGDIm7s61A==",
   "success": true,
-  "projectFilePath": "/Users/Julian.Codespoti/Desktop/Uni/IOT/GroupAssignment/IoTGroupProject/EdgeDevice/JuilansSmartMirrorAPI/SmartMirror.csproj",
+  "projectFilePath": "/Users/Julian.Codespoti/Desktop/Uni/IOT/GroupAssignment/IoTGroupProject/EdgeDevice/JuliansEdgeDevice/JuliansSmartMirrorAPI/SmartMirror.csproj",
   "expectedPackageFiles": [
     "/Users/Julian.Codespoti/.nuget/packages/humanizer.core/2.14.1/humanizer.core.2.14.1.nupkg.sha512",
     "/Users/Julian.Codespoti/.nuget/packages/microsoft.data.sqlite.core/7.0.17/microsoft.data.sqlite.core.7.0.17.nupkg.sha512",
