@@ -15,7 +15,7 @@ while True:
         light_level = int(light_part)
 
         # Define the MQTT message payload with both temperature and light level data
-        payload = '{"temperature": 25, "light_level": 300}'
+        payload = f'{{"temperature": {temperature}, "light_level": {light_level}}}'
 
         command = [
             "mosquitto_pub",
