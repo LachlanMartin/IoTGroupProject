@@ -34,14 +34,6 @@ while True:
         # Print the output
         print("stdout:", result.stdout)
         print("stderr:", result.stderr)
-
-        # Determine which LED to turn on based on light level threshold
-        if light_level < light_threshold:
-            ser.write(b"RED\n")
-        elif light_level < light_threshold + 100:  # Assumes a range of 100 for the yellow threshold
-            ser.write(b"YELLOW\n")
-        else:
-            ser.write(b"GREEN\n")
             
     except ValueError as e:
         print(f"Error parsing or inserting data: {e}")
