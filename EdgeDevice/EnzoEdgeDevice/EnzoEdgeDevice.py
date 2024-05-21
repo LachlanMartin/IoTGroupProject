@@ -1,44 +1,91 @@
+import tkinter as tk
+from tkinter import ttk
+import serial
+import serial.tools.list_ports
 import paho.mqtt.client as mqtt
 import json
-import time
 
-# Thingsboard MQTT configuration
-THINGSBOARD_HOST = "mqtt.thingsboard.io"
-THINGSBOARD_PORT = 1883
-THINGSBOARD_ACCESS_TOKEN = "5fu51w8c9n5mkmd8infj"
+class SerialMQTTCommunicator(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Serial MQTT Communicator")
+        self.geometry("800x600")
 
-# MQTT client initialization
-client = mqtt.Client()
-client.username_pw_set(THINGSBOARD_ACCESS_TOKEN)
-client.connect(THINGSBOARD_HOST, THINGSBOARD_PORT)
+        self.ports = serial.tools.list_ports.comports()
+        self.port_list = [str(port) for port in self.ports]
 
-# Function to publish data to Thingsboard
-def publish_data(temperature, humidity):
-    payload = {
-        "temperature": temperature,
-        "humidity": humidity
-    }
-    client.publish("v1/devices/me/telemetry", json.dumps(payload))
+        self.create_widgets()
 
-# Function to retrieve latest data from Thingsboard
-def retrieve_latest_data():
-    client.subscribe("v1/devices/me/attributes")
-    client.on_message = on_message
-    client.loop_start()
-    time.sleep(1)  # Wait for the data to be received
-    client.loop_stop()
+        # MQTT configuration
+        self.THINGSBOARD_HOST = "mqtt.thingsboard.cloud"
+        self.THINGSBOARD_PORT = 1883
+        self.THINGSBOARD_ACCESS_TOKEN = "5fu51w8c9n5mkmd8infj"
 
-# Callback function to handle received messages
-def on_message(client, userdata, message):
-    data = json.loads(message.payload.decode("utf-8"))
-    print("Latest data:")
-    print("Temperature:", data["temperature"])
-    print("Humidity:", data["humidity"])
+        # MQTT client initialization
+        self.mqtt_client = mqtt.Client()
+        self.mqtt_client.username_pw_set(self.THINGSBOARD_ACCESS_TOKEN)
+        self.mqtt_client.connect(self.THINGSBOARD_HOST, self.THINGSBOARD_PORT)
+        self.mqtt_client.loop_start()
 
-# Publish sample data
-publish_data(25.5, 60)
-publish_data(26.2, 58)
-publish_data(24.8, 62)
+    def create_widgets(self):
+        # Port selection dropdown
+        port_label = tk.Label(self, text="Select Port:")
+        port_label.pack(pady=5)
+        self.port_var = tk.StringVar()
+        port_dropdown = ttk.Combobox(self, textvariable=self.port_var, values=self.port_list)
+        port_dropdown.pack(pady=5)
 
-# Retrieve the latest data
-retrieve_latest_data()
+        # Data display area
+        data_label = tk.Label(self, text="Received Data:")
+        data_label.pack(pady=5)
+        self.data_text = tk.Text(self, height=10, wrap=tk.WORD)
+        self.data_text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        # Serial instance
+        self.serial_inst = None
+
+        # Configure the window to resize the Text widget
+        self.bind("<Configure>", self.resize_text)
+
+    def resize_text(self, event):
+        text_width = event.width - 20
+        text_height = event.height - 150
+        self.data_text.config(width=text_width, height=text_height)
+
+    def update_data(self):
+        if self.serial_inst and self.serial_inst.is_open:
+            if self.serial_inst.in_waiting:
+                packet = self.serial_inst.readline()
+                data = packet.decode('utf').rstrip('\n')
+                self.data_text.insert(tk.END, data + '\n')
+                self.data_text.see(tk.END)
+                self.process_data(data)
+        self.after(100, self.update_data)
+
+    def process_data(self, data):
+        if data.startswith("card_uid:"):
+            card_uid = data.split(":")[1].strip()
+            self.publish_data(card_uid)
+
+    def publish_data(self, card_uid):
+        payload = {
+            "card_uid": card_uid
+        }
+        self.mqtt_client.publish("v1/devices/me/telemetry", json.dumps(payload))
+
+    def start_serial(self, event=None):
+        port_var = self.port_var.get()
+        if port_var:
+            self.serial_inst = serial.Serial()
+            self.serial_inst.baudrate = 9600
+            self.serial_inst.port = port_var.split(' ')[0]  # Extract the port name from the string
+            try:
+                self.serial_inst.open()
+                self.update_data()
+            except serial.SerialException as e:
+                print(f"Error opening serial port: {e}")
+
+if __name__ == "__main__":
+    app = SerialMQTTCommunicator()
+    app.port_var.trace_add("write", lambda *args: app.start_serial())
+    app.mainloop()
