@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Mirror Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css">
+    <style>
+        .settings-pane {
+            position: fixed;
+            top: 0;
+            right: -300px;
+            width: 300px;
+            height: 100vh;
+            background-color: #f8f9fa;
+            transition: right 0.3s ease-in-out;
+            padding: 20px;
+        }
+        .settings-pane.open {
+            right: 0;
+        }
+        .alert {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Smart Mirror Dashboard</h1>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Temperature</h5>
+                    <p class="card-text" id="temperature"></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Light Level</h5>
+                    <p class="card-text" id="lightLevel"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Temperature Threshold</h5>
+                    <p class="card-text" id="tempThresholdDisplay"></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Update Interval</h5>
+                    <p class="card-text" id="updateIntervalDisplay"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Piezo Buzzer Status</h5>
+                    <p class="card-text" id="buzzerStatus"></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Motor (Fan) Status</h5>
+                    <p class="card-text" id="motorStatus"></p>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-4">
+        </div>
+        <div id="temperatureAlert" class="alert alert-warning" style="display: inline-block; text-align: center;"></div>
+        <div id="temperatureAbnormalAlert" class="alert alert-danger" style="display: inline-block; text-align: center;"></div>
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Temperature Graph</h5>
+                        <canvas id="temperatureGraph" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Light Level Graph</h5>
+                        <canvas id="lightLevelGraph" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-primary mt-3" id="toggleSettings">Settings</button>
+    </div>
+
+    <div class="settings-pane" id="settingsPane">
+        <h3>Settings</h3>
+        <form id="settingsForm">
+            <div class="mb-3">
+                <label for="tempThresholdInput" class="form-label">Temperature Threshold (°C)</label>
+                <input type="number" class="form-control" id="tempThresholdInput" name="tempThreshold" max="9999" required>
+            </div>
+            <div class="mb-3">
+                <label for="updateIntervalInput" class="form-label">Update Interval (seconds)</label>
+                <input type="number" class="form-control" id="updateIntervalInput" name="updateInterval" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const temperatureElement = document.getElementById('temperature');
+        const lightLevelElement = document.getElementById('lightLevel');
+        const tempThresholdDisplayElement = document.getElementById('tempThresholdDisplay');
+        const updateIntervalDisplayElement = document.getElementById('updateIntervalDisplay');
+        const toggleSettingsButton = document.getElementById('toggleSettings');
+        const settingsPane = document.getElementById('settingsPane');
+        const settingsForm = document.getElementById('settingsForm');
+        const temperatureAlertElement = document.getElementById('temperatureAlert');
+        const temperatureAbnormalAlertElement = document.getElementById('temperatureAbnormalAlert');
+        const motorStatusElement = document.getElementById('motorStatus');
+        const buzzerStatusElement = document.getElementById('buzzerStatus');
+
+        let updateInterval = 1000; // Default update interval of 1 second
+        let temperatureThreshold = 0;
+        let temperatureData = [];
+        let lightLevelData = [];
+        let temperatureChart, lightLevelChart;
+
+        function fetchData() {
+            fetch('/api/sensordata')
+                .then(response => response.json())
+                .then(data => {
+                    const latestData = data[data.length - 1];
+                    temperatureElement.textContent = latestData.temperature + ' °C';
+                    lightLevelElement.textContent = latestData.lightLevel;
+
+                    // Temperature threshold alerts
+                    if (latestData.temperature > temperatureThreshold) {
+                        temperatureAlertElement.textContent = 'Temperature threshold exceeded!';
+                        temperatureAlertElement.style.display = 'block';
+
+                        // Abnormally high temperature alert
+                        if (latestData.temperature > temperatureThreshold + 10) {
+                            temperatureAbnormalAlertElement.textContent = 'Abnormally high temperature detected!';
+                            temperatureAbnormalAlertElement.style.display = 'block';
+                            buzzerStatusElement.textContent = 'ON';
+                        } else {
+                            temperatureAbnormalAlertElement.style.display = 'none';
+                            buzzerStatusElement.textContent = 'OFF';
+                        }
+
+                        // Motor (fan) status
+                        motorStatusElement.textContent = 'ON';
+                    } else {
+                        temperatureAlertElement.style.display = 'none';
+                        temperatureAbnormalAlertElement.style.display = 'none';
+                        motorStatusElement.textContent = 'OFF';
+                        buzzerStatusElement.textContent = 'OFF';
+                    }
+
+                    // Update graphs
+                    updateTemperatureGraph(latestData.temperature);
+                    updateLightLevelGraph(latestData.lightLevel);
+                })
+                .catch(error => {
+                    console.error('Error fetching sensor data:', error);
+                });
+        }
+
+        function fetchSettings() {
+            fetch('/api/ConditionalRules')
+                .then(response => response.json())
+                .then(settings => {
+                    temperatureThreshold = settings[0].temperatureThreshold;
+                    tempThresholdDisplayElement.textContent = temperatureThreshold + ' °C';
+                    updateIntervalDisplayElement.textContent = settings[0].updateInterval / 1000 + ' seconds';
+                })
+                .catch(error => {
+                    console.error('Error fetching settings:', error);
+                });
+        }
+
+        function saveSettings(event) {
+            event.preventDefault();
+
+            const formData = new FormData(settingsForm);
+            const settings = {
+                temperatureThreshold: parseFloat(formData.get('tempThreshold')),
+                updateInterval: parseFloat(formData.get('updateInterval')) * 1000
+            };
+
+            fetch('/api/ConditionalRules/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            })
+                .then(response => {
+                    if (response.ok) {
+                        updateInterval = settings.updateInterval;
+                        fetchSettings();
+                        alert('Settings saved successfully!');
+                    } else {
+                        alert('Error saving settings. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving settings:', error);
+                    alert('Error saving settings. Please try again.');
+                });
+        }
+
+        function createTemperatureChart() {
+            const ctx = document.getElementById('temperatureGraph').getContext('2d');
+            temperatureChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Temperature',
+                        data: [],
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function createLightLevelChart() {
+            const ctx = document.getElementById('lightLevelGraph').getContext('2d');
+            lightLevelChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Light Level',
+                        data: [],
+                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                        borderColor: 'rgba(255, 206, 86, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTemperatureGraph(temperature) {
+            temperatureData.push(temperature);
+            if (temperatureData.length > 50) {
+                temperatureData.shift();
+            }
+
+            temperatureChart.data.labels = Array.from({ length: temperatureData.length }, (_, i) => i + 1);
+            temperatureChart.data.datasets[0].data = temperatureData;
+            temperatureChart.update();
+        }
+
+        function updateLightLevelGraph(lightLevel) {
+            lightLevelData.push(lightLevel);
+            if (lightLevelData.length > 10) {
+                lightLevelData.shift();
+            }
+
+            lightLevelChart.data.labels = Array.from({ length: lightLevelData.length }, (_, i) => i + 1);
+            lightLevelChart.data.datasets[0].data = lightLevelData;
+            lightLevelChart.update();
+        }
+
+        toggleSettingsButton.addEventListener('click', () => {
+            settingsPane.classList.toggle('open');
+        });
+
+        settingsForm.addEventListener('submit', saveSettings);
+
+        createTemperatureChart();
+        createLightLevelChart();
+        fetchSettings();
+        setInterval(fetchData, updateInterval);
+    </script>
+</body>
+</html>
