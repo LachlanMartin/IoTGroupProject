@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using SmartMirror.Models;
 using SmartMirror.Services;
 
 namespace SmartMirror.Controllers
@@ -17,7 +18,12 @@ namespace SmartMirror.Controllers
         [HttpGet("filtered")]
         public IActionResult GetFilteredSensorData()
         {
-            var data = _mqttService.GetFilteredData();
+            var data = _mqttService.GetData();
+            var thresholdConfig = _mqttService.GetThresholdConfig();
+            // Filter the data based on the threshold configuration
+            var filteredData = data.Where(d => d is { } sensorData &&
+                sensorData.Temperature > thresholdConfig.TemperatureThreshold &&
+                sensorData.LightLevel < thresholdConfig.LightLevelThreshold);
             return Ok(data);
         }
     }

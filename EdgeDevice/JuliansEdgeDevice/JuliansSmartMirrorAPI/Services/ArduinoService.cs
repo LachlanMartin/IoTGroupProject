@@ -43,10 +43,11 @@ public class ArduinoService : IHostedService
     {
         using var scope = _serviceProvider.CreateScope();
         var mqttService = scope.ServiceProvider.GetRequiredService<MqttService>();
-        var filteredData = mqttService.GetFilteredData().ToList();
+        var filteredData = mqttService.GetData().ToList();
+        var thresholdConfig = mqttService.GetThresholdConfig();
 
-        var motorState = filteredData.OfType<SensorData>().Any(s => s.Temperature > 200);
-        var ledState = filteredData.OfType<SensorData>().Any(s => s.LightLevel < 10);
+        var motorState = filteredData.OfType<SensorData>().Any(s => s.Temperature > thresholdConfig.TemperatureThreshold);
+        var ledState = filteredData.OfType<SensorData>().Any(s => s.LightLevel < thresholdConfig.LightLevelThreshold);
         var piezoState = filteredData.OfType<CardData>().Any();
 
         var command = new

@@ -2,6 +2,7 @@ using System.Net.WebSockets;
 using System.Text;
 using Newtonsoft.Json;
 using SmartMirror.Models;
+using System.Collections.Generic;
 
 namespace SmartMirror.Services
 {
@@ -13,6 +14,7 @@ namespace SmartMirror.Services
         private readonly List<SensorData> _sensorDataList = new List<SensorData>();
         private readonly List<CardData> _cardDataList = new List<CardData>();
         private CancellationTokenSource _cancellationTokenSource;
+        private ThresholdConfig _thresholdConfig = new ThresholdConfig();
 
         public MqttService(IConfiguration configuration, ILogger<MqttService> logger)
         {
@@ -99,7 +101,15 @@ namespace SmartMirror.Services
                             entityId = "e67d5010-1323-11ef-9e10-4570a5104a0d",
                             scope = "LATEST_TELEMETRY",
                             type = "TIMESERIES"
-                        }
+                        },
+                        new
+                        {
+                            cmdId = 3,
+                            entityType = "DEVICE",
+                            entityId = "d36fd010-182d-11ef-ba49-7338e27601c4",
+                            scope = "SERVER_SCOPE",
+                            type = "ATTRIBUTES"
+                        },
                     }
                 };
 
@@ -149,37 +159,76 @@ namespace SmartMirror.Services
             {
                 var jsonResponse = JsonConvert.DeserializeObject<JsonResponse>(message);
 
-                if (jsonResponse != null && jsonResponse.Data != null)
+                if (jsonResponse?.Data == null) return;
+
+                switch (jsonResponse)
                 {
-                    if (jsonResponse.Data.Temperature != null && jsonResponse.Data.LightLevel != null)
-                    {
-                        var sensorData = new SensorData
-                        {
-                            Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(jsonResponse.LatestValues.Temperature).UtcDateTime,
-                            Temperature = float.Parse((string)jsonResponse.Data.Temperature[0][1]),
-                            LightLevel = float.Parse((string)jsonResponse.Data.LightLevel[0][1])
-                        };
-
-                        _sensorDataList.Add(sensorData);
-                        _logger.LogInformation($"Sensor data added: {JsonConvert.SerializeObject(sensorData)}");
-                    }
-                    else if (jsonResponse.Data.CardUid != null)
-                    {
-                        var cardData = new CardData
-                        {
-                            Timestamp = DateTime.UtcNow,
-                            CardUid = jsonResponse.Data.CardUid[0][1].ToString()
-                        };
-
-                        _cardDataList.Add(cardData);
-                        _logger.LogInformation($"Card data added: {JsonConvert.SerializeObject(cardData)}");
-                    }
+                    case { Data.Temperature: not null, Data.LightLevel: not null }:
+                        AddSensorData(jsonResponse);
+                        break;
+                    case { Data.CardUid: not null }:
+                        AddCardData(jsonResponse);
+                        break;
+                    default:
+                        UpdateThresholdConfig(jsonResponse.Data);
+                        break;
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error processing message: {ex.Message}");
             }
+        }
+
+        private void AddSensorData(JsonResponse jsonResponse)
+        {
+            var sensorData = new SensorData
+            {
+                Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(jsonResponse.LatestValues.Temperature).UtcDateTime,
+                Temperature = float.Parse(jsonResponse.Data.Temperature[0][1].ToString()),
+                LightLevel = float.Parse(jsonResponse.Data.LightLevel[0][1].ToString())
+            };
+
+            _sensorDataList.Add(sensorData);
+            _logger.LogInformation($"Sensor data added: {JsonConvert.SerializeObject(sensorData)}");
+        }
+
+        private void AddCardData(JsonResponse jsonResponse)
+        {
+            var cardData = new CardData
+            {
+                Timestamp = DateTime.UtcNow,
+                CardUid = jsonResponse.Data.CardUid[0][1].ToString()
+            };
+
+            _cardDataList.Add(cardData);
+            _logger.LogInformation($"Card data added: {JsonConvert.SerializeObject(cardData)}");
+        }
+
+        private void UpdateThresholdConfig(DataContainer data)
+        {
+            if (data.TemperatureThreshold != null)
+            {
+                _thresholdConfig.TemperatureThreshold = float.Parse(data.TemperatureThreshold[0][1].ToString());
+                _logger.LogInformation($"Temperature threshold updated: {_thresholdConfig.TemperatureThreshold}");
+            }
+
+            if (data.LightLevelThreshold != null)
+            {
+                _thresholdConfig.LightLevelThreshold = float.Parse(data.LightLevelThreshold[0][1].ToString());
+                _logger.LogInformation($"Light level threshold updated: {_thresholdConfig.LightLevelThreshold}");
+            }
+        }
+
+        
+        public List<SensorData> GetData()
+        {
+            return _sensorDataList;
+        }
+
+        public ThresholdConfig GetThresholdConfig()
+        {
+            return _thresholdConfig;
         }
 
         private class JsonResponse
@@ -201,6 +250,12 @@ namespace SmartMirror.Services
 
             [JsonProperty("card_uid")]
             public List<List<object>> CardUid { get; set; }
+
+            [JsonProperty("temperatureThreshold")]
+            public List<List<object>> TemperatureThreshold { get; set; }
+            
+            [JsonProperty("lightLevelThreshold")]
+            public List<List<object>> LightLevelThreshold { get; set; }
         }
 
         private class LatestValues
@@ -212,14 +267,15 @@ namespace SmartMirror.Services
             public long Temperature { get; set; }
         }
 
-        public IEnumerable<object> GetFilteredData()
-        {
-            return _sensorDataList;
-        }
-
         private class LoginResult
         {
             public string Token { get; set; }
         }
+    }
+
+    public class ThresholdConfig
+    {
+        public float TemperatureThreshold { get; set; }
+        public float LightLevelThreshold { get; set; }
     }
 }
