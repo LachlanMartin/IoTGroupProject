@@ -1,31 +1,24 @@
 using Microsoft.AspNetCore.Mvc;
-using SmartMirror.Models;
+using SmartMirror.Services;
 
-namespace SmartMirror.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-public class SensorDataController : ControllerBase
+namespace SmartMirror.Controllers
 {
-    private readonly SmartMirrorContext _context;
-
-    public SensorDataController(SmartMirrorContext context)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class SensorDataController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly MqttService _mqttService;
 
-    [HttpGet]
-    public ActionResult<IEnumerable<SensorData>> GetSensorData()
-    {
-        return _context.SensorData.ToList();
-    }
+        public SensorDataController(MqttService mqttService)
+        {
+            _mqttService = mqttService;
+        }
 
-    [HttpPost]
-    public IActionResult CreateSensorData(SensorData sensorData)
-    {
-        _context.SensorData.Add(sensorData);
-        _context.SaveChanges();
-
-        return CreatedAtAction(nameof(GetSensorData), new { id = sensorData.Id }, sensorData);
+        [HttpGet("filtered")]
+        public IActionResult GetFilteredSensorData()
+        {
+            var data = _mqttService.GetFilteredData();
+            return Ok(data);
+        }
     }
 }
