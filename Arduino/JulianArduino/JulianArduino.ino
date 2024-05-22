@@ -1,69 +1,33 @@
-// Arduino script for smart mirror project
-// Include the ArduinoJson library
 #include <ArduinoJson.h>
 
-// Define pins for sensors and actuators
-const int tempSensorPin = A0;
-const int lightSensorPin = A1;
+// Define pins for actuators
 const int piezoPin = 3;
 const int motorPin = 4;
-
-// Variables to store sensor data and actuator states
-float temperature = 0.0;
-int lightLevel = 0;
-bool motorState = false;
-
-// Variables to store conditional rules
-int updateInterval = 1000;          // Default update interval
-float temperatureThreshold = 25.0;  // Default temperature threshold
+const int ledPin = 5;
 
 void setup() {
   // Initialize serial communication
   Serial.begin(9600);
 
-  // Set pin modes for sensors and actuators
+  // Set pin modes for actuators
   pinMode(piezoPin, OUTPUT);
   pinMode(motorPin, OUTPUT);
+  pinMode(ledPin, OUTPUT);
+
+  // Initialize actuators to off state
+  digitalWrite(motorPin, LOW);
+  digitalWrite(ledPin, LOW);
+  noTone(piezoPin);
 }
 
 void loop() {
-  // Read data from sensors
-  temperature = getTemperatureData();
-  lightLevel = getLightData();
-
-  // Create a JSON object to store sensor data
-  StaticJsonDocument<200> sensorDoc;
-  sensorDoc["temperature"] = temperature;
-  sensorDoc["lightLevel"] = lightLevel;
-
-  // Send sensor data as JSON object over serial
-  serializeJson(sensorDoc, Serial);
-  Serial.println();
-
   // Check if there are any incoming commands from Raspberry Pi
   if (Serial.available()) {
     String json = Serial.readString();
     processCommand(json);
   }
-
-  // Control actuators based on temperature condition
-  controlMotor();
-  controlPiezo();
-
-  // Delay for the specified update interval before the next iteration
-  delay(updateInterval);
-}
-
-// Function to get temperature data
-float getTemperatureData() {
-  float temperatureF = analogRead(tempSensorPin);
-  float temperatureC = (temperatureF - 32.0) * 5.0 / 9.0;
-  return temperatureC;
-}
-
-// Function to get light data
-int getLightData() {
-  return analogRead(lightSensorPin);
+  // Small delay to avoid overwhelming the serial buffer
+  delay(100);
 }
 
 // Function to process incoming commands from Raspberry Pi
@@ -79,31 +43,26 @@ void processCommand(String json) {
     return;
   }
 
-  // Update conditional rules based on the received JSON payload
-  if (doc.containsKey("u")) {
-    updateInterval = doc["u"];
+  // Control motor based on command
+  if (doc.containsKey("motor")) {
+    bool motorState = doc["motor"];
+    digitalWrite(motorPin, motorState ? HIGH : LOW);
   }
-  if (doc.containsKey("t")) {
-    temperatureThreshold = doc["t"];
-  }
-}
 
-// Function to control motor based on temperature condition
-void controlMotor() {
-  if (temperature > temperatureThreshold) {
-    digitalWrite(motorPin, HIGH);
-    motorState = true;
-  } else {
-    digitalWrite(motorPin, LOW);
-    motorState = false;
+  // Control LED based on command
+  if (doc.containsKey("led")) {
+    bool ledState = doc["led"];
+    Serial.println(ledState);
+    digitalWrite(ledPin, ledState == 1 ? HIGH : LOW);
   }
-}
 
-// Function to control piezo based on temperature condition
-void controlPiezo() {
-  if (temperature > temperatureThreshold + 10) {
-    tone(piezoPin, 1000, 500);  // Play a tone of 1000Hz for 500ms
-  } else {
-    noTone(piezoPin);  // Stop playing the tone
+  // Control piezo based on command
+  if (doc.containsKey("piezo")) {
+    bool piezoState = doc["piezo"];
+    if (piezoState) {
+      tone(piezoPin, 1000);  // Play a tone of 1000Hz
+    } else {
+      noTone(piezoPin);  // Stop playing the tone
+    }
   }
 }
