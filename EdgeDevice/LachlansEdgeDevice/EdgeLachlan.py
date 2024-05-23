@@ -1,5 +1,6 @@
 import serial
 import subprocess
+import time
 
 # Configure the serial connection
 ser = serial.Serial('/dev/ttyS0', 9600)
@@ -7,6 +8,7 @@ ser = serial.Serial('/dev/ttyS0', 9600)
 while True:
     # Read and decode the serial line
     line = ser.readline().decode('utf-8').strip()
+    ser.reset_input_buffer()
     print(line)
     
     try:
@@ -37,3 +39,5 @@ while True:
             
     except ValueError as e:
         print(f"Error parsing or inserting data: {e}")
+
+    time.sleep(0.1)
