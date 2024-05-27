@@ -20,8 +20,8 @@ public class ArduinoService : IHostedService
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        // _serialPort = new SerialPort("/dev/ttyACM0", 9600);
-        _serialPort = new SerialPort("/dev/cu.usbmodem2101", 9600);
+        _serialPort = new SerialPort("/dev/ttyACM0", 9600);
+        // _serialPort = new SerialPort("/dev/cu.usbmodem2101", 9600);
         _serialPort.Open();
 
         // Set up a timer to periodically check the filtered data
@@ -43,12 +43,17 @@ public class ArduinoService : IHostedService
     {
         using var scope = _serviceProvider.CreateScope();
         var mqttService = scope.ServiceProvider.GetRequiredService<MqttService>();
-        var filteredData = mqttService.GetData().ToList();
+        var data = mqttService.GetData();
         var thresholdConfig = mqttService.GetThresholdConfig();
+        var now = DateTime.UtcNow;
 
-        var motorState = filteredData.OfType<SensorData>().Any(s => s.Temperature > thresholdConfig.TemperatureThreshold);
-        var ledState = filteredData.OfType<SensorData>().Any(s => s.LightLevel < thresholdConfig.LightLevelThreshold);
-        var piezoState = filteredData.OfType<CardData>().Any();
+        var temperatureData = data.FirstOrDefault(d => d?.SensorData?.Temperature > thresholdConfig?.TemperatureThreshold);
+        var lightLevelData = data.FirstOrDefault(d => d?.SensorData?.LightLevel < thresholdConfig?.LightLevelThreshold);
+        var cardData = data.FirstOrDefault(d => d?.CardData?.Timestamp > now.AddSeconds(-5));
+
+        var motorState = temperatureData != null;
+        var ledState = lightLevelData != null;
+        var piezoState = cardData != null;
 
         var command = new
         {
@@ -58,6 +63,7 @@ public class ArduinoService : IHostedService
         };
 
         var jsonCommand = JsonConvert.SerializeObject(command);
+        _logger.LogInformation($"Generated command: {jsonCommand}");
 
         // Check if the new command is different from the last command
         if (jsonCommand != _lastCommand)

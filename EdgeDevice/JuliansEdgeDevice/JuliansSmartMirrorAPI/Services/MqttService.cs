@@ -39,6 +39,8 @@ namespace SmartMirror.Services
         private async Task ConnectAsync()
         {
             _webSocket = new ClientWebSocket();
+            Console.WriteLine("peepoopeepoo");
+            Console.WriteLine(_configuration["Thingsboard:Server"]);
             var uri = new Uri($"ws://{_configuration["Thingsboard:Server"]}/api/ws");
 
             try
@@ -221,9 +223,18 @@ namespace SmartMirror.Services
         }
 
         
-        public List<SensorData> GetData()
+        public List<Data> GetData()
         {
-            return _sensorDataList;
+            var cardData = _cardDataList.LastOrDefault();
+            var sensorData = _sensorDataList.LastOrDefault();
+            return new List<Data>
+            {
+                new Data
+                {
+                    CardData = cardData,
+                    SensorData = sensorData
+                }
+            };
         }
 
         public ThresholdConfig GetThresholdConfig()

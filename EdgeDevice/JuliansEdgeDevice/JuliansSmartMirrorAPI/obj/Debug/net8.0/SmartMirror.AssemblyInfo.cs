@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SmartMirror")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6c4d1eae5c59d2bf7b32ca9401def9281229a0de")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+26f7c7953436138722bc8a5314d94633f1f99bff")]
 [assembly: System.Reflection.AssemblyProductAttribute("SmartMirror")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SmartMirror")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

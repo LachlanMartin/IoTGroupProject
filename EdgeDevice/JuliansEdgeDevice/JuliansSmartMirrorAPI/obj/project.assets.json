@@ -5559,5 +5559,13 @@
         "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.204/PortableRuntimeIdentifierGraph.json"
       }
     }
-  }
+  },
+  "logs": [
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Problem reading the cache file /Users/Julian.Codespoti/Desktop/Uni/IOT/GroupAssignment/IoTGroupProject/EdgeDevice/JuliansEdgeDevice/JuliansSmartMirrorAPI/obj/project.nuget.cache : Found invalid data while decoding."
+    }
+  ]
 }

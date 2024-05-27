@@ -20,11 +20,30 @@ namespace SmartMirror.Controllers
         {
             var data = _mqttService.GetData();
             var thresholdConfig = _mqttService.GetThresholdConfig();
-            // Filter the data based on the threshold configuration
-            var filteredData = data.Where(d => d is { } sensorData &&
-                sensorData.Temperature > thresholdConfig.TemperatureThreshold &&
-                sensorData.LightLevel < thresholdConfig.LightLevelThreshold);
-            return Ok(data);
+            var now = DateTime.UtcNow;
+
+            var temperatureData = data.FirstOrDefault(d => d?.SensorData?.Temperature > thresholdConfig?.TemperatureThreshold);
+            var lightLevelData = data.FirstOrDefault(d => d?.SensorData?.LightLevel < thresholdConfig?.LightLevelThreshold);
+            var cardData = data.FirstOrDefault(d => d?.CardData?.Timestamp > now.AddSeconds(-5));
+
+            var result = new FilteredSensorData
+            {
+                Temperature = data?.FirstOrDefault()?.SensorData?.Temperature,
+                TemperatureAlert = temperatureData != null,
+                LightLevel = data?.FirstOrDefault()?.SensorData?.LightLevel,
+                LightLevelAlert = lightLevelData != null,
+                CardUid = cardData?.CardData?.CardUid ?? "Not scanned",
+                CardAlert = cardData != null
+            };
+
+            return Ok(result);
+        }
+
+        [HttpGet("thresholds")]
+        public IActionResult GetThresholds()
+        {
+            var thresholdConfig = _mqttService.GetThresholdConfig();
+            return Ok(thresholdConfig);
         }
     }
 }

@@ -113,5 +113,12 @@
     "/Users/Julian.Codespoti/.nuget/packages/system.threading.threadpool/4.3.0/system.threading.threadpool.4.3.0.nupkg.sha512",
     "/Users/Julian.Codespoti/.nuget/packages/system.threading.timer/4.3.0/system.threading.timer.4.3.0.nupkg.sha512"
   ],
-  "logs": []
+  "logs": [
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Problem reading the cache file /Users/Julian.Codespoti/Desktop/Uni/IOT/GroupAssignment/IoTGroupProject/EdgeDevice/JuliansEdgeDevice/JuliansSmartMirrorAPI/obj/project.nuget.cache : Found invalid data while decoding."
+    }
+  ]
 }
