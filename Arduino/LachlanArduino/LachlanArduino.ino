@@ -11,10 +11,6 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
 const int lightSensorPin = A0; // Photoresistor connected to analog pin A0
-const int greenLED = 2; 
-const int yellowLED = 3;
-const int redLED = 4;
-const int buzzer = 7;
 
 void setup() {
   Serial.begin(9600); // Start serial communication at 9600 bps
@@ -33,11 +29,6 @@ void setup() {
   /*4. Set the value of register A to 31250*/
   OCR1A = 65535;             //Finally we set compare register A to this value  
   sei();                     //Enable back the interrupts
-
-  pinMode(greenLED, OUTPUT);
-  pinMode(yellowLED, OUTPUT);
-  pinMode(redLED, OUTPUT);
-  pinMode(buzzer, OUTPUT);
 }
 
 void loop() {
@@ -58,25 +49,4 @@ ISR(TIMER1_COMPA_vect){
   int lightLevel = analogRead(lightSensorPin); // Read the light level (0 to 1023)
   Serial.print("Light level: ");
   Serial.println(lightLevel);
-
-  if (Serial.available() > 0) {
-    String command = Serial.readStringUntil('\n');
-    controlLEDs(command);
-  }
-}
-
-void controlLEDs(String command) {
-  digitalWrite(greenLED, LOW);
-  digitalWrite(yellowLED, LOW);
-  digitalWrite(redLED, LOW);
-  digitalWrite(buzzer, LOW);
-  
-  if (command.indexOf("RED") != -1) {
-    digitalWrite(redLED, HIGH);
-    digitalWrite(buzzer, HIGH);
-  } else if (command.indexOf("YELLOW") != -1) {
-    digitalWrite(yellowLED, HIGH);
-  } else if (command.indexOf("GREEN") != -1) {
-    digitalWrite(greenLED, HIGH);
-  }
 }
